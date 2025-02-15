@@ -1,0 +1,47 @@
+name: Build HevSocks5Tunnel
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'hevsocks5-*'
+
+jobs:
+  build-hevsocks5:
+    runs-on: macos-14
+    steps:
+      - name: Checkout HevSocks5Tunnel
+        uses: actions/checkout@v4
+        with:
+          repository: 'zloserver/hev-socks5-tunnel'
+          ref: 'master'
+          path: 'hevsocks5'
+          submodules: 'recursive'
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'release'
+          path: 'release'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build HevSocks5Tunnel
+        run: |
+          cd hevsocks5
+          ./build-apple.sh
+
+      - name: Copy framework to release branch
+        run: |
+          rm -rf release/HevSocks5Tunnel.xcframework
+          cp -R hevsocks5/HevSocks5Tunnel.xcframework release/
+
+      - name: Push release branch
+        run: |
+          git config --global user.name "Github Actions"
+          git config --global user.email ""
+          git commit -m "HevSocks5Tunnel update"
+          git push
