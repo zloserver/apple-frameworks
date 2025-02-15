@@ -1,0 +1,55 @@
+name: Build LibXRay
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'libxray-apple-*'
+
+jobs:
+  build-libxray:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Xray-core
+        uses: actions/checkout@v4
+        with:
+          repository: 'XTLS/Xray-core'
+          ref: 'v25.1.30'
+          path: 'Xray-core'
+      
+      - name: Checkout libXray
+        uses: actions/checkout@v4
+        with:
+          repository: 'zloserver/libXray'
+          ref: 'v25.1.30'
+          path: 'libXray'
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'release'
+          path: 'release'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build libXray
+        run: |
+          cd libXray
+          python3 build/main.py apple go
+
+      - name: Copy framework to release branch
+        run: |
+          rm -rf release/LibXray.xcframework
+          cp -R libXray/LibXray.xcframework release/
+
+      - name: Push release branch
+        run: |
+          cd release
+          git config --global user.name "Github Actions"
+          git config --global user.email ""
+          git add .
+          git commit -m "LibXray update"
+          git push
